@@ -1,166 +1,165 @@
-## Project: Build a Traffic Sign Recognition Program
+## Project: Build a Traffic Sign Classifier
 Cristian Alberch
 ---
 
-This Jupyter Notebook uses Machine Learning to predict the classification of a given typical traffic sign image. 
-In this project, you will use what you've learned about deep neural networks and convolutional neural networks to classify traffic signs. You will train and validate a model so it can classify traffic sign images using the [German Traffic Sign Dataset](http://benchmark.ini.rub.de/?section=gtsrb&subsection=dataset). After the model is trained, you will then try out your model on images of German traffic signs that you find on the web.
+This application in Jupyter Notebook uses Machine Learning to predict the classification of a given traffic sign image.
 
-**Build a Traffic Sign Recognition Project**
+The model uses a convolutional neural network based on the LeNet architecture in TensorFlow. The model is trained using a German traffic signs dataset, and tested against images of traffic signs taken randomly from the web.
 
-The goals / steps of this project are the following:
-* Load the data set (see below for links to the project data set)
-* Explore, summarize and visualize the data set
-* Design, train and test a model architecture
-* Use the model to make predictions on new images
-* Analyze the softmax probabilities of the new images
-* Summarize the results with a written report
+The work is divided into sections: 
 
----
-The goals / steps of this project are the following:
+1. Data Set Summary & Exploration
 
-### Data Set Summary & Exploration
+2. Design and Test of Model Architecture
 
-#### 1. Provide a basic summary of the data set. In the code, the analysis should be done using python, numpy and/or pandas methods rather than hardcoding results manually.
+3. Testing the Model in 'Real-World' Environment
 
-I used the pandas library to calculate summary statistics of the traffic
+4. Results & Discussion
+
+### 1. Data Set Summary & Exploration
+
+I used the Numpy operations  summary statistics of the traffic
 signs data set:
 
-* The size of training set is ?
-* The size of the validation set is ?
-* The size of test set is ?
-* The shape of a traffic sign image is ?
-* The number of unique classes/labels in the data set is ?
+* The size of training set is 34,799.
+* The size of the validation set is 4,410.
+* The size of test set is 12,630.
+* The shape of a traffic sign image is 32 x 32 x 3.
+* The number of unique classes/labels in the data set is 43.
 
-#### 2. Include an exploratory visualization of the dataset.
+As there are 43 different labels to train, it is worth noting the distribution in the number of images per label in the training, validation and training datasets.
 
-Here is an exploratory visualization of the data set. It is a bar chart showing how the data ...
+![Training / Validation / Test Data distribution](histogram.png)
 
-![alt text][image1]
+It can be observed that there is a large variance in the number of samples, where traffic sign label 2: "Speed limit (50km/h)" has the largest 
+number of training samples (2010), whereas label 37 "Go straight or left" has the least number of training samples (180).
 
-### Design and Test a Model Architecture
+It is expected that images corresponding to labels with a small number of training samples will have a lower prediction accuracy.
 
-#### 1. Describe how you preprocessed the image data. What techniques were chosen and why did you choose these techniques? Consider including images showing the output of each preprocessing technique. Pre-processing refers to techniques such as converting to grayscale, normalization, etc. (OPTIONAL: As described in the "Stand Out Suggestions" part of the rubric, if you generated additional data for training, describe why you decided to generate additional data, how you generated the data, and provide example images of the additional data. Then describe the characteristics of the augmented training set like number of images in the set, number of images for each class, etc.)
+![Traffic sign training labels](signsall.png)
 
-As a first step, I decided to convert the images to grayscale because ...
+In order to obtain a model that can be generalized, the variety of data is important. In this case, the training samples should include images with different sizes, shape, color, hue, and rotation.
 
-Here is an example of a traffic sign image before and after grayscaling.
+A random sample of training images for label 2: "Speed limit (50km/h)" indicates a fairly well balanced training dataset. 
 
-![alt text][image2]
+![Traffic sign: speed limit 50km/h](sign50kmh.png)
 
-As a last step, I normalized the image data because ...
+### 2. Design and Test of Model Architecture
 
-I decided to generate additional data because ... 
+#### 2.1 Pre-processing
 
-To add more data to the the data set, I used the following techniques because ... 
+Before feeding a training image to the neural network, pixel standardization for the input 3 image channels (RGB) was applied. This results in an input image with all 3-channels having mean = 0, and standard deviation = 1.
 
-Here is an example of an original image and an augmented image:
+```
+def process_img(img):
+    pixels = asarray(img)    
+    # convert from integers to floats
+    pixels = pixels.astype('float32')
+    # calculate per-channel means and standard deviations
+    means = pixels.mean(axis=(0,1), dtype='float64')
+    stds = pixels.std(axis=(0,1), dtype='float64')
+    # per-channel standardization of pixels
+    pixels = (pixels - means) / stds
+    return pixels
+```
+#### 2.2 Le-Net modified architecure
 
-![alt text][image3]
+The neural network is based on LeNet architecture and the following parameters modified to obtain the model with the highest validation accuracy:
+- Learning rate: (0.0005 -> 0.002). 0.001 was selected.
+- Batch sizes (32,64,128,256). 128 was selected.
+- Dropout layer location (before, after ReLU). After ReLU wasa selected.
+- Number of training epochs (upto 200). 40 was selected.
 
-The difference between the original data set and the augmented data set is the following ... 
-
-
-#### 2. Describe what your final model architecture looks like including model type, layers, layer sizes, connectivity, etc.) Consider including a diagram and/or table describing the final model.
-
-My final model consisted of the following layers:
+The neural network model consisted of the following layers:
 
 | Layer         		|     Description	        					| 
 |:---------------------:|:---------------------------------------------:| 
-| Input         		| 32x32x3 RGB image   							| 
-| Convolution 3x3     	| 1x1 stride, same padding, outputs 32x32x64 	|
-| RELU					|												|
-| Max pooling	      	| 2x2 stride,  outputs 16x16x64 				|
-| Convolution 3x3	    | etc.      									|
-| Fully connected		| etc.        									|
-| Softmax				| etc.        									|
-|						|												|
-|						|												|
- 
+| Input         		| 32x32x3 RGB image   	                        |
+|.......................|...............................................| 
+| Convolution 3x3     	| 1x1 stride, 'VALID' padding, outputs 28x28x6 	|
+| Activation			| ReLU											|
+| Dropout               | 0.9 probability                               |
+| Max pooling	      	| 2x2 stride,  'VALID' padding, outputs 14x14x6 |
+|.......................|...............................................| 
+| Convolution 3x3     	| 1x1 stride, 'VALID' padding, outputs 10x10x6 	|
+| Activation			| ReLU											|
+| Dropout               | 0.9 probability                               |
+| Max pooling	      	| 2x2 stride,  'VALID' padding, outputs 5x5x16  |
+|.......................|...............................................| 
+| Flatten Input     	| outputs 400 x 1	                            |
+|.......................|...............................................| 
+| Fully Connected     	| outputs 400 x 1                              	|
+|.......................|...............................................| 
+| Fully Connected     	| outputs 120 x 1                             	|
+|.......................|...............................................| 
+| Fully Connected     	| outputs 43 labels                            	|
+|.......................|...............................................| 
 
 
-#### 3. Describe how you trained your model. The discussion can include the type of optimizer, the batch size, number of epochs and any hyperparameters such as learning rate.
+#### Training the model
 
-To train the model, I used an ....
+Cross entropy was used to calculate the loss function and AdamOptimizer to optimize the loss function.
 
-#### 4. Describe the approach taken for finding a solution and getting the validation set accuracy to be at least 0.93. Include in the discussion the results on the training, validation and test sets and where in the code these were calculated. Your approach may have been an iterative process, in which case, outline the steps you took to get to the final solution and why you chose those steps. Perhaps your solution involved an already well known implementation or architecture. In this case, discuss why you think the architecture is suitable for the current problem.
+```
+cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=one_hot_y, logits=logits)
+loss_operation = tf.reduce_mean(cross_entropy)
+optimizer = tf.train.AdamOptimizer(learning_rate = rate)
+training_operation = optimizer.minimize(loss_operation)
+```
+
+#### Testing the model
+
+After the model was optimized several times verifying the accuracy against the validation data set, the final model was tested against the test data set.
 
 My final model results were:
-* training set accuracy of ?
-* validation set accuracy of ? 
-* test set accuracy of ?
+* validation set accuracy of 95.3 
+* test set accuracy of 93.7
 
-If an iterative approach was chosen:
-* What was the first architecture that was tried and why was it chosen?
-* What were some problems with the initial architecture?
-* How was the architecture adjusted and why was it adjusted? Typical adjustments could include choosing a different model architecture, adding or taking away layers (pooling, dropout, convolution, etc), using an activation function or changing the activation function. One common justification for adjusting an architecture would be due to overfitting or underfitting. A high accuracy on the training set but low accuracy on the validation set indicates over fitting; a low accuracy on both sets indicates under fitting.
-* Which parameters were tuned? How were they adjusted and why?
-* What are some of the important design choices and why were they chosen? For example, why might a convolution layer work well with this problem? How might a dropout layer help with creating a successful model?
 
-If a well known architecture was chosen:
-* What architecture was chosen?
-* Why did you believe it would be relevant to the traffic sign application?
-* How does the final model's accuracy on the training, validation and test set provide evidence that the model is working well?
+### 3. Testing the Model in 'Real-World' Environment
+
+The following images of traffic signs were downloaded from the web in .jpeg format.
+
+![Images downloaded from web](web_images.png)
+
+The jpeg images were:
+- Reduced to size 32 x 32 x 3.
+- Saved in .png format.
+- Normalized to mean of 0 and standard deviation of 1.0.
+- Fed into the neural network.
+
+The image processing and model predictions are shown in table below with the corresponding prediction confidence.
+
+![Traffic sign classifier predictions](predictions.png)
+
+1. "Turn right" is incorrectly classified. However, the prediction result does get the main image characteristics correct (i.e. it's blue with a white arrow pointing to the right).
+
+2. "Priority Road" is correctly classified. This image should be easy to classify as it is very distint to all the other traffic symbols.
+
+3. "Speed limit (60km/h)" is incorrectly classified. This could be due to the sign post confusing the image.
+
+4. "Speed limit (50km/h)" is correctly classified. This traffic sign is one of the most heavily represented in the training data set.
+
+5. "No entry" is correctly classified. The strong red background and circular shape makes it easy to distinguish.
+
+6. "Yield" is incorrectly classified as the first prediction. However, it is correctly classified with 17% confidence in the second prediction. The straight edges with white surroundings appear to be a factor in the prediction.
+
+### 4. Results & Discussion
+
+The model has a high accuracy for the training dataset provided (94%) but a much lower accuracy when it is fed random images of traffic signs from the web. The model could be trained to generalize better by:
+
+1. Increase the training dataset by applying transformations, such as: adding random noise, adjusting color saturation, hue, rotation, viewing angle.
+
+2. The images when reduced to 32 x 32 size are not very clear. Increasing the resolution of the image would improve the accuracy albeit resulting in a larger neural network requiring more computational resources.
+
  
-
-### Test a Model on New Images
-
-#### 1. Choose five German traffic signs found on the web and provide them in the report. For each image, discuss what quality or qualities might be difficult to classify.
-
-Here are five German traffic signs that I found on the web:
-
-![alt text][image4] ![alt text][image5] ![alt text][image6] 
-![alt text][image7] ![alt text][image8]
-
-The first image might be difficult to classify because ...
-
-#### 2. Discuss the model's predictions on these new traffic signs and compare the results to predicting on the test set. At a minimum, discuss what the predictions were, the accuracy on these new predictions, and compare the accuracy to the accuracy on the test set (OPTIONAL: Discuss the results in more detail as described in the "Stand Out Suggestions" part of the rubric).
-
-Here are the results of the prediction:
-
-| Image			        |     Prediction	        					| 
-|:---------------------:|:---------------------------------------------:| 
-| Stop Sign      		| Stop sign   									| 
-| U-turn     			| U-turn 										|
-| Yield					| Yield											|
-| 100 km/h	      		| Bumpy Road					 				|
-| Slippery Road			| Slippery Road      							|
-
-
-The model was able to correctly guess 4 of the 5 traffic signs, which gives an accuracy of 80%. This compares favorably to the accuracy on the test set of ...
-
-#### 3. Describe how certain the model is when predicting on each of the five new images by looking at the softmax probabilities for each prediction. Provide the top 5 softmax probabilities for each image along with the sign type of each probability. (OPTIONAL: as described in the "Stand Out Suggestions" part of the rubric, visualizations can also be provided such as bar charts)
-
-The code for making predictions on my final model is located in the 11th cell of the Ipython notebook.
-
-For the first image, the model is relatively sure that this is a stop sign (probability of 0.6), and the image does contain a stop sign. The top five soft max probabilities were
-
-| Probability         	|     Prediction	        					| 
-|:---------------------:|:---------------------------------------------:| 
-| .60         			| Stop sign   									| 
-| .20     				| U-turn 										|
-| .05					| Yield											|
-| .04	      			| Bumpy Road					 				|
-| .01				    | Slippery Road      							|
-
-
-For the second image ... 
-
-
-## How to write a README
-
-
-
-
-
-Authors:
-
-Cristian Alberch https://github.com/cristiandatum
-License:
-
-This project is licensed under the MIT License.
-
-Feel free to use the code in the Jupyter Notebook as you like.
+  
+   
 Acknowledgments:
 
-The .csv files containing data from real disaster response messages was provided by Udacity from German Traffic dataset [German Traffic Sign Dataset](http://benchmark.ini.rub.de/?section=gtsrb&subsection=dataset). The starter code was provided by Udacity.
+The .csv files containing data provided by Udacity from German Traffic dataset [German Traffic Sign Dataset](http://benchmark.ini.rub.de/?section=gtsrb&subsection=dataset). The starter code was provided by Udacity.
+
+Authors: Cristian Alberch https://github.com/cristiandatum
+
+License: This project is licensed under the MIT License. Feel free to use the code in the Jupyter Notebook as you like.
 
